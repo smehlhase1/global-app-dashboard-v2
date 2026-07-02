@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global App Initiatives — Progress Dashboard</title>
+<style>
+  :root {
+    --done:    #16a34a;
+    --done-lt: #dcfce7;
+    --wip:     #d97706;
+    --wip-lt:  #fef3c7;
+    --todo:    #6b7280;
+    --todo-lt: #f3f4f6;
+    --hold:    #7c3aed;
+    --hold-lt: #ede9fe;
+    --red:     #dc2626;
+    --red-lt:  #fee2e2;
+    --blue:    #2563eb;
+    --blue-lt: #eff6ff;
+    --border:  #e5e7eb;
+    --text:    #111827;
+    --muted:   #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; color: var(--text); background: #f9fafb; }
+
+  /* ── Header ── */
+  header { background: linear-gradient(135deg, #0f172a 0%, #1a3a5c 100%); color: #fff; padding: 36px 40px 32px; }
+  header .inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: flex-start; justify-content: space-between; gap: 32px; }
+  header .inner-left { flex: 1; }
+  header .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; opacity: .6; margin-bottom: 8px; }
+  header h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  header .sub { margin-top: 6px; opacity: .65; font-size: 13px; }
+  header .meta { margin-top: 16px; display: flex; gap: 20px; flex-wrap: wrap; }
+  header .meta-item { display: flex; align-items: center; gap: 6px; font-size: 12px; opacity: .75; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot-done { background: #4ade80; }
+  .dot-wip  { background: #fbbf24; }
+  .dot-hold { background: #a78bfa; }
+  .dot-todo { background: #9ca3af; }
+  /* Partner logo */
+  .partner-block { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+  .partner-label { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; opacity: .45; }
+  .partner-logo { background: #fff; border-radius: 8px; padding: 8px 14px; height: 48px; min-width: 160px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+  .partner-logo img { max-height: 28px; max-width: 130px; object-fit: contain; display: block; }
+
+  /* ── Layout ── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  /* ── Summary bar ── */
+  .summary-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 32px; }
+  .summary-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; }
+  .summary-card .num  { font-size: 26px; font-weight: 700; line-height: 1; }
+  .summary-card .lbl  { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .summary-card.green .num { color: var(--done); }
+  .summary-card.amber .num { color: var(--wip); }
+  .summary-card.purple .num { color: var(--hold); }
+  .summary-card.gray  .num { color: var(--todo); }
+  .summary-card.blue  .num { color: var(--blue); }
+
+  /* ── Section heading ── */
+  h2 { font-size: 16px; font-weight: 700; color: var(--text); margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 8px; }
+
+  /* ── Initiative cards ── */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card-full  { grid-column: span 2; }
+  .card-half  { grid-column: span 1; }
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    position: relative;
+  }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .card-header .title { font-weight: 700; font-size: 14px; line-height: 1.3; }
+  .card-header .jira  { font-size: 11px; color: var(--muted); font-family: monospace; margin-top: 2px; }
+  .card-header .owner { font-size: 11px; color: var(--muted); text-align: right; white-space: nowrap; margin-top: 2px; }
+
+  /* Status badges */
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+  .badge-done   { background: var(--done-lt); color: var(--done); }
+  .badge-wip    { background: var(--wip-lt);  color: var(--wip); }
+  .badge-todo   { background: var(--todo-lt); color: var(--todo); }
+  .badge-hold   { background: var(--hold-lt); color: var(--hold); }
+  .badge-closed { background: #f0fdf4; color: #166534; }
+
+  /* Epic list */
+  .epic-list { list-style: none; margin-top: 8px; }
+  .epic-list li { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f3f4f6; gap: 8px; font-size: 12px; }
+  .epic-list li:last-child { border-bottom: none; }
+  .epic-list .ekey { font-family: monospace; font-size: 11px; color: var(--muted); flex-shrink: 0; }
+  .epic-list .etitle { flex: 1; color: #374151; }
+  .epic-list .eassign { font-size: 11px; color: var(--muted); flex-shrink: 0; white-space: nowrap; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Epic grid for multi-column inside card */
+  .epic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+
+  /* Progress bar */
+  .prog-wrap { margin-top: 10px; }
+  .prog-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .prog-bar { height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--done), #22c55e); }
+  .prog-fill-wip { background: linear-gradient(90deg, var(--wip), #f59e0b); }
+
+  /* FlowForge AI table */
+  .ff-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .ff-table thead tr { background: #f8fafc; }
+  .ff-table th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .ff-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .ff-table tr:last-child td { border-bottom: none; }
+  .ff-table tr:hover td { background: #f9fafb; }
+  .ff-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
+  .ff-badge.wip      { background: var(--wip-lt);  color: var(--wip); }
+  .ff-badge.todo     { background: var(--todo-lt); color: var(--todo); }
+  .ff-badge.done     { background: var(--done-lt); color: var(--done); }
+  .ff-badge.review   { background: #dbeafe; color: #1d4ed8; }
+  .ff-badge.hold     { background: var(--hold-lt); color: var(--hold); }
+  .ff-ai-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; background: #ede9fe; color: #6d28d9; padding: 2px 7px; border-radius: 20px; }
+  .ff-initiative-tag { font-size: 11px; color: var(--muted); }
+
+  /* On-hold banner */
+  .hold-banner { background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #5b21b6; margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <div class="inner-left">
+      <div class="eyebrow">PROD-12278 · Theme #8</div>
+      <h1>Allianz Global App — Progress Dashboard</h1>
+      <p class="sub">Theme owner: Sascha Mehlhase · Initiative owner: Sarah Martins · Last data pull: 2 Jul 2026</p>
+      <div class="meta">
+        <span class="meta-item"><span class="dot dot-done"></span> Done / Delivered</span>
+        <span class="meta-item"><span class="dot dot-wip"></span> In Progress</span>
+        <span class="meta-item"><span class="dot dot-hold"></span> On Hold</span>
+        <span class="meta-item"><span class="dot dot-todo"></span> Not Started</span>
+      </div>
+    </div>
+    <div class="partner-block">
+      <div class="partner-label">Partnership</div>
+      <div class="partner-logo">
+        <img src="https://www.simplesurance.com/wp-content/uploads/simplesurance-logo.png" alt="Simplesurance"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span style="display:none;color:#0d9488;font-weight:700;font-size:13px">simplesurance</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Summary bar -->
+  <div class="summary-bar">
+    <div class="summary-card blue">
+      <div class="num">8</div>
+      <div class="lbl">Initiatives</div>
+    </div>
+    <div class="summary-card amber">
+      <div class="num">8</div>
+      <div class="lbl">In Progress</div>
+    </div>
+    <div class="summary-card purple">
+      <div class="num">3</div>
+      <div class="lbl">On Hold (AAL)</div>
+    </div>
+    <div class="summary-card green">
+      <div class="num">3</div>
+      <div class="lbl">FlowForge Epics Active</div>
+    </div>
+    <div class="summary-card gray">
+      <div class="num">12</div>
+      <div class="lbl">FlowForge AI Tickets</div>
+    </div>
+  </div>
+
+  <!-- ══ Active Initiatives ══ -->
+  <h2>🟡 Active Initiatives</h2>
+  <div class="grid">
+
+    <!-- 18201 CH Switzerland -->
+    <div class="card card-full">
+      <div class="card-header">
+        <div>
+          <div class="title">Global App CH — Switzerland</div>
+          <div class="jira"><a href="https://sisu-agile.atlassian.net/browse/PROD-12331" target="_blank">PROD-12331</a> · 18201</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge badge-wip">In Progress</span>
+          <div class="owner">Sarah Martins</div>
+        </div>
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-label"><span>Epic progress</span><span>14 done · 16 in progress · 8 to do</span></div>
+        <div class="prog-bar"><div class="prog-fill" style="width:37%"></div></div>
+      </div>
+      <div class="epic-grid" style="margin-top:12px">
+        <ul class="epic-list">
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12279" target="_blank">PROD-12279</a><span class="etitle">CH post sales customer journeys</span><span class="badge badge-closed">Closed</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12280" target="_blank">PROD-12280</a><span class="etitle">CH Discovery</span><span class="badge badge-done">Done</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12287" target="_blank">PROD-12287</a><span class="etitle">List Policy Integration</span><span class="badge badge-done">Done</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12294" target="_blank">PROD-12294</a><span class="etitle">CH Service structure</span><span class="badge badge-done">Done</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12300" target="_blank">PROD-12300</a><span class="etitle">Policy details Integration</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12383" target="_blank">PROD-12383</a><span class="etitle">CH Person details</span><span class="badge badge-done">Done</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12468" target="_blank">PROD-12468</a><span class="etitle">CH Paperless</span><span class="badge badge-done">Done</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12469" target="_blank">PROD-12469</a><span class="etitle">CH Claims service</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12470" target="_blank">PROD-12470</a><span class="etitle">CH Policy Documents</span><span class="badge badge-done">Done</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12471" target="_blank">PROD-12471</a><span class="etitle">PI-III Notifications</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12480" target="_blank">PROD-12480</a><span class="etitle">CH Person details 2</span><span class="badge badge-done">Done</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12481" target="_blank">PROD-12481</a><span class="etitle">PI-III Mailbox-List</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12482" target="_blank">PROD-12482</a><span class="etitle">PI-III Mailbox-Item</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12483" target="_blank">PROD-12483</a><span class="etitle">PI-II Loyalty</span><span class="badge badge-wip">In Progress</span></li>
+        </ul>
+        <ul class="epic-list">
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12484" target="_blank">PROD-12484</a><span class="etitle">PI-II Motor Insurance Certificate Questionnaire</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12643" target="_blank">PROD-12643</a><span class="etitle">CH Agent 1</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12718" target="_blank">PROD-12718</a><span class="etitle">PI-II Policy Coverages</span><span class="badge badge-done">Done</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12756" target="_blank">PROD-12756</a><span class="etitle">CH Language Parameters</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12757" target="_blank">PROD-12757</a><span class="etitle">PI-II Dashboard</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12800" target="_blank">PROD-12800</a><span class="etitle">PI-II Payment Frequency</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12801" target="_blank">PROD-12801</a><span class="etitle">PI-II Dunning Stop</span><span class="badge badge-done">Done</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12802" target="_blank">PROD-12802</a><span class="etitle">PI-II Search Address</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12805" target="_blank">PROD-12805</a><span class="etitle">PI-II Green Card</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12806" target="_blank">PROD-12806</a><span class="etitle">PI-II Policy Agent</span><span class="badge badge-done">Done</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12875" target="_blank">PROD-12875</a><span class="etitle">Paperless preferences</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12876" target="_blank">PROD-12876</a><span class="etitle">Marketing preferences</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12957" target="_blank">PROD-12957</a><span class="etitle">PI-II Lookups for data lists</span><span class="badge badge-wip">In Progress</span></li>
+          <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13198" target="_blank">PROD-13198</a><span class="etitle">PI-II Go-live preparation</span><span class="badge badge-wip">In Progress</span></li>
+        </ul>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted)">PI-III epics (To Do): Multiple Customer Numbers · Pension Gap · Async Process · Customer Profile Delete · Accident &amp; Group Health · All LOBs QA · Customer Bank Account · Claims Journey Screen · Motor Certificate Improvements</div>
+    </div>
+
+    <!-- 18200 General Work -->
+    <div class="card card-half">
+      <div class="card-header">
+        <div>
+          <div class="title">Global App — General Work</div>
+          <div class="jira"><a href="https://sisu-agile.atlassian.net/browse/PROD-12332" target="_blank">PROD-12332</a> · 18200</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge badge-wip">In Progress</span>
+          <div class="owner">Sarah Martins</div>
+        </div>
+      </div>
+      <ul class="epic-list">
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12318" target="_blank">PROD-12318</a><span class="etitle">Authentication Service / Login</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12384" target="_blank">PROD-12384</a><span class="etitle">Infrastructure &amp; FCP Migration</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12629" target="_blank">PROD-12629</a><span class="etitle">NFRs Documentation</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12662" target="_blank">PROD-12662</a><span class="etitle">OE Onboarding &amp; Configuration</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12759" target="_blank">PROD-12759</a><span class="etitle">Monitoring &amp; Observability</span><span class="badge badge-hold">ON HOLD</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12828" target="_blank">PROD-12828</a><span class="etitle">Documentation &amp; Backlog Refinement</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12923" target="_blank">PROD-12923</a><span class="etitle">Virtual OE</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12948" target="_blank">PROD-12948</a><span class="etitle">Login Beta</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12978" target="_blank">PROD-12978</a><span class="etitle">Login Beta+</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13055" target="_blank">PROD-13055</a><span class="etitle">FCP Migration GlobalApp</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13397" target="_blank">PROD-13397</a><span class="etitle">Enable Notification Centre (Kafka)</span><span class="badge badge-todo">To Do</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/ARCH-1" target="_blank">ARCH-1</a><span class="etitle">Architecture Blueprints Review</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/ARCH-2" target="_blank">ARCH-2</a><span class="etitle">Architecture Blueprints</span><span class="badge badge-todo">Selected for Dev</span></li>
+      </ul>
+    </div>
+
+    <!-- 18202 AzD NL -->
+    <div class="card card-half">
+      <div class="card-header">
+        <div>
+          <div class="title">Global App AzD — Allianz Direct NL</div>
+          <div class="jira"><a href="https://sisu-agile.atlassian.net/browse/PROD-12339" target="_blank">PROD-12339</a> · 18202</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge badge-wip">In Progress</span>
+          <div class="owner">Sarah Martins</div>
+        </div>
+      </div>
+      <ul class="epic-list">
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12614" target="_blank">PROD-12614</a><span class="etitle">Requirements</span><span class="badge badge-done">Done</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12618" target="_blank">PROD-12618</a><span class="etitle">Customer Login &amp; Authentication</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12768" target="_blank">PROD-12768</a><span class="etitle">Service Structure</span><span class="badge badge-done">Done</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12769" target="_blank">PROD-12769</a><span class="etitle">Display all policies</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12770" target="_blank">PROD-12770</a><span class="etitle">Display policy details</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12771" target="_blank">PROD-12771</a><span class="etitle">Display person details</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12773" target="_blank">PROD-12773</a><span class="etitle">Display claims &amp; claim details</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12827" target="_blank">PROD-12827</a><span class="etitle">Alerts &amp; Notifications</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13240" target="_blank">PROD-13240</a><span class="etitle">FlowForge for AzD NL ✦</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13261" target="_blank">PROD-13261</a><span class="etitle">Time Tracking</span><span class="badge badge-todo">To Do</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12772" target="_blank">PROD-12772</a><span class="etitle">Insurance customer card</span><span class="badge badge-todo">To Do</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12807" target="_blank">PROD-12807</a><span class="etitle">Update Address (Motor sync)</span><span class="badge badge-todo">To Do</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12808" target="_blank">PROD-12808</a><span class="etitle">Update Address (Home async)</span><span class="badge badge-todo">To Do</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12619" target="_blank">PROD-12619</a><span class="etitle">Password Management &amp; Recovery</span><span class="badge badge-todo">Backlog</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12620" target="_blank">PROD-12620</a><span class="etitle">Consent Management</span><span class="badge badge-todo">Backlog</span></li>
+      </ul>
+    </div>
+
+    <!-- 18204 AZ Partners -->
+    <div class="card card-half">
+      <div class="card-header">
+        <div>
+          <div class="title">Global App — AZ Partners</div>
+          <div class="jira"><a href="https://sisu-agile.atlassian.net/browse/PROD-12514" target="_blank">PROD-12514</a> · 18204</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge badge-wip">In Progress</span>
+          <div class="owner">Sarah Martins · Yulia Tsybanova</div>
+        </div>
+      </div>
+      <ul class="epic-list">
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13008" target="_blank">PROD-13008</a><span class="etitle">Gap analysis &amp; mapping for AzP</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13079" target="_blank">PROD-13079</a><span class="etitle">AzP Lounge Zone Access (QR code)</span><span class="badge badge-wip">Engineering</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13155" target="_blank">PROD-13155</a><span class="etitle">AzP Trip &amp; Flight planner</span><span class="badge badge-wip">Engineering</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13241" target="_blank">PROD-13241</a><span class="etitle">FlowForge for AZ Partners ✦</span><span class="badge badge-done">Done</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13256" target="_blank">PROD-13256</a><span class="etitle">Post-Sales Services APIs</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13076" target="_blank">PROD-13076</a><span class="etitle">AzP Vault microservice</span><span class="badge badge-todo">To Do</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13082" target="_blank">PROD-13082</a><span class="etitle">Allyz Get Emergency Numbers</span><span class="badge badge-todo">To Do</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13083" target="_blank">PROD-13083</a><span class="etitle">Allyz Hospital Finder</span><span class="badge badge-todo">To Do</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13084" target="_blank">PROD-13084</a><span class="etitle">Allyz Contact Doctor</span><span class="badge badge-todo">To Do</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13085" target="_blank">PROD-13085</a><span class="etitle">Allyz Policy management</span><span class="badge badge-todo">To Do</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13089" target="_blank">PROD-13089</a><span class="etitle">AzP Dashboard</span><span class="badge badge-todo">To Do</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13492" target="_blank">PROD-13492</a><span class="etitle">Log in</span><span class="badge badge-todo">To Do</span></li>
+      </ul>
+    </div>
+
+    <!-- 18205 Allianz Italy -->
+    <div class="card card-half">
+      <div class="card-header">
+        <div>
+          <div class="title">Global App — Allianz Italy</div>
+          <div class="jira"><a href="https://sisu-agile.atlassian.net/browse/PROD-12341" target="_blank">PROD-12341</a> · 18205</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge badge-wip">In Progress</span>
+          <div class="owner">Sarah Martins · Armida Napolitano</div>
+        </div>
+      </div>
+      <ul class="epic-list">
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12611" target="_blank">PROD-12611</a><span class="etitle">Discovery Global App Allianz Italy</span><span class="badge badge-closed">Closed</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12657" target="_blank">PROD-12657</a><span class="etitle">Discovery (ongoing)</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12831" target="_blank">PROD-12831</a><span class="etitle">Workspace configuration</span><span class="badge badge-done">Done</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12874" target="_blank">PROD-12874</a><span class="etitle">Onboarding Nikola Zivkovic</span><span class="badge badge-wip">In Progress</span></li>
+      </ul>
+    </div>
+
+    <!-- 18203 AAL Australia -->
+    <div class="card card-half">
+      <div class="card-header">
+        <div>
+          <div class="title">Global App AAL — Australia</div>
+          <div class="jira"><a href="https://sisu-agile.atlassian.net/browse/PROD-12340" target="_blank">PROD-12340</a> · 18203</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge badge-wip">In Progress</span>
+          <div class="owner">Sarah Martins · Yulia Tsybanova</div>
+        </div>
+      </div>
+      <div class="hold-banner">⏸ Most AAL epics are ON HOLD — pending partner decision. Login &amp; Authentication active.</div>
+      <ul class="epic-list" style="margin-top:8px">
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12507" target="_blank">PROD-12507</a><span class="etitle">Login &amp; Authentication</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13325" target="_blank">PROD-13325</a><span class="etitle">Prepare Policy API design for governance board</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13326" target="_blank">PROD-13326</a><span class="etitle">CMS</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13376" target="_blank">PROD-13376</a><span class="etitle">Onboarding Armida Napolitano / OE Discovery</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12518" target="_blank">PROD-12518</a><span class="etitle">User Onboarding &amp; OE Config</span><span class="badge badge-hold">ON HOLD</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12524" target="_blank">PROD-12524</a><span class="etitle">Consent Management</span><span class="badge badge-hold">ON HOLD</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12541" target="_blank">PROD-12541</a><span class="etitle">Dashboard &amp; Navigation</span><span class="badge badge-hold">ON HOLD</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12553" target="_blank">PROD-12553</a><span class="etitle">Personal Information</span><span class="badge badge-hold">ON HOLD</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12729" target="_blank">PROD-12729</a><span class="etitle">View Policy Overview &amp; Details</span><span class="badge badge-hold">ON HOLD</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12742" target="_blank">PROD-12742</a><span class="etitle">Realtime status update notifications</span><span class="badge badge-hold">ON HOLD</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-12779" target="_blank">PROD-12779</a><span class="etitle">OE Setup</span><span class="badge badge-hold">ON HOLD</span></li>
+      </ul>
+    </div>
+
+    <!-- 18206 AzD Italy -->
+    <div class="card card-half">
+      <div class="card-header">
+        <div>
+          <div class="title">Global App AzD — Allianz Direct Italy</div>
+          <div class="jira"><a href="https://sisu-agile.atlassian.net/browse/PROD-12850" target="_blank">PROD-12850</a> · 18206</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge badge-wip">In Progress</span>
+          <div class="owner">Sarah Martins</div>
+        </div>
+      </div>
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No epics created yet — initiative setup in progress</div>
+    </div>
+
+    <!-- 18200 AI Rollout -->
+    <div class="card card-half">
+      <div class="card-header">
+        <div>
+          <div class="title">AI Rollout — FlowForge</div>
+          <div class="jira"><a href="https://sisu-agile.atlassian.net/browse/PROD-13115" target="_blank">PROD-13115</a> · 18200</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge badge-wip">In Progress</span>
+          <div class="owner">Igor Kochman</div>
+        </div>
+      </div>
+      <ul class="epic-list">
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13009" target="_blank">PROD-13009</a><span class="etitle">18200 – FlowForge</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13116" target="_blank">PROD-13116</a><span class="etitle">Rollout: FlowForge to Integration Layer</span><span class="badge badge-wip">In Progress</span></li>
+        <li><a class="ekey" href="https://sisu-agile.atlassian.net/browse/PROD-13182" target="_blank">PROD-13182</a><span class="etitle">FlowForge Setup for BA needs</span><span class="badge badge-done">Done</span></li>
+      </ul>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- ══ FlowForge AI Tasks ══ -->
+  <h2>🤖 FlowForge Tasks — Created with Claude Code AI</h2>
+  <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    <div style="background:#ede9fe;border-bottom:1px solid #ddd6fe;padding:10px 16px;display:flex;align-items:center;gap:8px">
+      <span class="ff-ai-tag">✦ FlowForge</span>
+      <span style="font-size:12px;color:#5b21b6">Tasks below were created by Claude Code AI and carry the <strong>FlowForge</strong> label in Jira</span>
+    </div>
+    <table class="ff-table">
+      <thead>
+        <tr>
+          <th>Ticket</th>
+          <th>Summary</th>
+          <th>Initiative</th>
+          <th>Assignee</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/CIL-5430" target="_blank">CIL-5430</a></td>
+          <td>Global App AzD — Extend LoB + map with provider field for List/Get Policies</td>
+          <td class="ff-initiative-tag">AzD NL (18202)</td>
+          <td>Vladimir Patrikeev</td>
+          <td><span class="ff-badge wip">In Progress</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/CIL-5352" target="_blank">CIL-5352</a></td>
+          <td>Global App AzD — Remove product_type mapping for Direct NL policies</td>
+          <td class="ff-initiative-tag">AzD NL (18202)</td>
+          <td>Vladimir Patrikeev</td>
+          <td><span class="ff-badge todo">To Do</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/CIL-5394" target="_blank">CIL-5394</a></td>
+          <td>Global App AzD — Implement parallel calls for Get Policy endpoint</td>
+          <td class="ff-initiative-tag">AzD NL (18202)</td>
+          <td>Unassigned</td>
+          <td><span class="ff-badge todo">To Do</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/CIL-5396" target="_blank">CIL-5396</a></td>
+          <td>Global App AzD — Implement mock response for Get Policy Document</td>
+          <td class="ff-initiative-tag">AzD NL (18202)</td>
+          <td>Unassigned</td>
+          <td><span class="ff-badge todo">To Do</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/CIL-5573" target="_blank">CIL-5573</a></td>
+          <td>Global App AzD — API draft: Add product_name to Travel and LegalAid additional_data</td>
+          <td class="ff-initiative-tag">AzD NL (18202)</td>
+          <td>Alex Yaroshenko</td>
+          <td><span class="ff-badge done">Done</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/CIL-5574" target="_blank">CIL-5574</a></td>
+          <td>Global App AzD — API Draft: Status Notification Info</td>
+          <td class="ff-initiative-tag">AzD NL (18202)</td>
+          <td>Mahmoud Mohamed</td>
+          <td><span class="ff-badge done">Done</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/CIL-5597" target="_blank">CIL-5597</a></td>
+          <td>Global App AzD NL — e2e: List Policies, Get Policy — Product title mapping</td>
+          <td class="ff-initiative-tag">AzD NL (18202)</td>
+          <td>Mahmoud Mohamed</td>
+          <td><span class="ff-badge review">In Code Review</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/CIL-5717" target="_blank">CIL-5717</a></td>
+          <td>Global App — Implement FlowForge skill for Data Model documentation update</td>
+          <td class="ff-initiative-tag">General Work (18200)</td>
+          <td>Unassigned</td>
+          <td><span class="ff-badge todo">To Do</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/CIL-5734" target="_blank">CIL-5734</a></td>
+          <td>Global App AzD — List Policies, Get Policies: Ensure stable integration with updated spec</td>
+          <td class="ff-initiative-tag">AzD NL (18202)</td>
+          <td>Alex Yaroshenko</td>
+          <td><span class="ff-badge review">In Code Review</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/CIL-5835" target="_blank">CIL-5835</a></td>
+          <td>[CHOE] API Draft: Get Mailbox Document</td>
+          <td class="ff-initiative-tag">CH Switzerland (18201)</td>
+          <td>Unassigned</td>
+          <td><span class="ff-badge todo">To Do</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/AGB-19" target="_blank">AGB-19</a></td>
+          <td>[API RFC] Global App: Post-Sales Services API — Emergency Numbers</td>
+          <td class="ff-initiative-tag">AZ Partners (18204)</td>
+          <td>Unassigned</td>
+          <td><span class="ff-badge todo">To Do</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/AGB-22" target="_blank">AGB-22</a></td>
+          <td>[API RFC] Global App: Post-Sales Services API — Hospital Finder</td>
+          <td class="ff-initiative-tag">AZ Partners (18204)</td>
+          <td>Unassigned</td>
+          <td><span class="ff-badge todo">To Do</span></td>
+        </tr>
+        <tr>
+          <td><a href="https://sisu-agile.atlassian.net/browse/AGB-34" target="_blank">AGB-34</a></td>
+          <td>[API RFC] Global App: Post-Sales Services API — Lounge Zone QR Code Management</td>
+          <td class="ff-initiative-tag">AZ Partners (18204)</td>
+          <td>Yulia Tsybanova</td>
+          <td><span class="ff-badge hold">Paused / On Hold</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="padding:8px 16px;background:#f8fafc;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">
+      13 tickets · <a href="https://sisu-agile.atlassian.net/issues/?jql=labels%3DFlowForge%20AND%20(text%20~%20%22Global%20App%22%20OR%20text%20~%20%22AzD%22)%20ORDER%20BY%20created%20DESC" target="_blank">View all in Jira ↗</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
