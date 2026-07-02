@@ -49,7 +49,7 @@
   .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
 
   /* ── Summary bar ── */
-  .summary-bar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 32px; }
+  .summary-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 32px; }
   .summary-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; }
   .summary-card .num  { font-size: 26px; font-weight: 700; line-height: 1; }
   .summary-card .lbl  { font-size: 12px; color: var(--muted); margin-top: 4px; }
@@ -148,8 +148,9 @@
              onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
         <span style="display:none;color:#0d9488;font-weight:700;font-size:13px">simplesurance</span>
       </div>
-      <div class="partner-logo">
+      <div class="partner-logo" style="height:60px;padding:6px 14px">
         <img src="https://images.squarespace-cdn.com/content/v1/6760715ba0a73a4f1227482b/16f0ed97-74de-460d-b8f9-92d06175a139/1.png" alt="Allianz Technology"
+             style="max-height:44px;max-width:150px"
              onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
         <span style="display:none;color:#003781;font-weight:700;font-size:13px">Allianz Technology</span>
       </div>
@@ -176,10 +177,6 @@
     <div class="summary-card amber">
       <div class="num">44</div>
       <div class="lbl">Epics In Progress</div>
-    </div>
-    <div class="summary-card green">
-      <div class="num">1</div>
-      <div class="lbl">FlowForge Epic Active</div>
     </div>
     <div class="summary-card gray">
       <div class="num">12</div>
